@@ -2,16 +2,47 @@ package store
 
 import (
 	"context"
+	"sync"
+	"errors"
 )
 
-func Store(ctx context.Context, slug string, content string) error {
-	return nil	
+type MemoryStore struct {
+	mu sync.Mutex	
+	ContentBySlug map[string]string
 }
 
-func Get(ctx context.Context, slug string) (string, error) {
-	return "", nil
+func NewMemoryStore() (*MemoryStore) {
+	ms := &MemoryStore{
+		ContentBySlug:  make(map[string]string, 0),
+	}
+
+	return ms	
 }
 
-func Delete(ctx context.Context, slug string) error {
+func (m *MemoryStore)  Save(ctx context.Context, slug string, content string) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	_, ok := m.ContentBySlug[slug]
+	if (ok) {
+		return errors.New("Attempted to overwrite stored value")
+	}
+
+	m.ContentBySlug[slug] = content
+	return nil
+}
+
+func (m *MemoryStore) Get(ctx context.Context, slug string) (string, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	c, ok := m.ContentBySlug[slug]
+	if (!ok) {
+		return "", errors.New("Slug not found")
+	}
+
+	return c, nil
+}
+
+func (m *MemoryStore) Delete(ctx context.Context, slug string) error {
 	return nil	
 }

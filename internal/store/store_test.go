@@ -4,6 +4,26 @@ import (
 	"testing"
 )
 
+type Case struct {
+	Name string
+	New func() server.Store
+}
+
+func TestRoundTrip(t *testing.T) {
+	tests := make([]Case, 0, 0)	
+	ms := Case{
+		Name: "MemoryStore",
+		New: func() server.Store {
+			return NewMemoryStore()
+		},
+	}
+	tests = append(tests, ms)
+
+	for _, impl := range tests {
+		t.Run(impl.Name, func (t *testing.T) { subtestRoundTrip(t, impl.New()) } )
+	}
+}
+
 func subtestRoundTrip(t *testing.T, s server.Store) {
 	in := "abcd"
 	out := "efgh"
