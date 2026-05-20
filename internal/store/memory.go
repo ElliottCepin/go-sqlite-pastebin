@@ -43,6 +43,13 @@ func (m *MemoryStore) Get(ctx context.Context, slug string) (string, error) {
 	return c, nil
 }
 
+// Deletes a specified value from the store
+// Returns an error in order to fulfill the interface
 func (m *MemoryStore) Delete(ctx context.Context, slug string) error {
-	return nil	
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	delete(m.ContentBySlug, slug)
+
+	return nil 
 }
