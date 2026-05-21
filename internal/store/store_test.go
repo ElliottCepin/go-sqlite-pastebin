@@ -4,6 +4,7 @@ import (
 	"testing"
 	"sync"
 	"fmt"
+	"path/filepath"
 )
 
 type Storage struct {
@@ -17,8 +18,9 @@ type Case struct {
 }
 
 func TestSubtests(t *testing.T) {
+	
 	stores := make([]Storage, 0, 0)	
-	tests := make([]Case, 0, 0)	
+	tests := make([]Case, 0, 0)
 
 	ms := Storage{
 		Name: "MemoryStore",
@@ -32,7 +34,7 @@ func TestSubtests(t *testing.T) {
 		Name: "SQLiteStore",
 		New: func () server.Store {
 			dbcount += 1
-			db, err := NewSQLiteStore(fmt.Sprintf("db-%v", dbcount))
+			db, err := NewSQLiteStore(filepath.Join(t.TempDir(), fmt.Sprintf("db-%v", dbcount)))
 			if (err != nil) {
 				t.Fatalf("Error opening database: %v", err)
 			}

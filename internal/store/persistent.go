@@ -11,6 +11,9 @@ import (
 type SQLiteStore struct {
 	mu sync.Mutex	
 	db *sql.DB
+	del *sql.Stmt
+	get *sql.Stmt
+	set *sql.Stmt
 }
 
 func NewSQLiteStore(filename string) (*SQLiteStore, error) {
@@ -34,6 +37,10 @@ func NewSQLiteStore(filename string) (*SQLiteStore, error) {
 		return nil, err
 	}
 
+	s.set, err = s.db.Prepare("INSERT INTO snippets (slug, content) VALUES (?, ?);")
+	s.get, err = s.db.Prepare("SELECT slug, content FROM snippets WHERE slug=(?)")
+	s.del, err = s.db.Prepare("DELETE FROM snippets WHERE slug=(?)")
+
 	return s, nil
 }
 
@@ -41,7 +48,7 @@ func (s *SQLiteStore)  Save(ctx context.Context, slug string, content string) er
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	result, err := s.db.ExecContext(ctx, "INSERT INTO snippets (slug, content) VALUES (?, ?)", slug, content)
+	result, err := s.set.ExecContext(ctx, slug, content)
 	
 	if (err != nil) {
 		return err
@@ -61,7 +68,9 @@ func (s *SQLiteStore)  Save(ctx context.Context, slug string, content string) er
 }
 
 func (s *SQLiteStore) Get(ctx context.Context, slug string) (string, error) {
-	row := s.db.QueryRowContext(ctx, "SELECT slug, content FROM snippets WHERE slug=(?)")
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	row := s.get.QueryRowContext(ctx, slug)
 	var slg, con string
 	err := row.Scan(&slg, &con)
 	if (err != nil) {
@@ -76,6 +85,13 @@ func (s *SQLiteStore) Get(ctx context.Context, slug string) (string, error) {
 }
 
 func (s *SQLiteStore) Delete(ctx context.Context, slug string) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	
+	_, err := s.del.ExecContext(ctx, slug)
+	if (err != nil) {
+		return err
+	}
 
 	return nil 
 }
