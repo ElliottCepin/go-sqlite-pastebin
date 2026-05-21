@@ -16,13 +16,27 @@ type Case struct {
 	Inst func(*testing.T, server.Store)
 }
 
-func TestRoundTrip(t *testing.T) {
+func TestSubtests(t *testing.T) {
 	stores := make([]Storage, 0, 0)	
 	tests := make([]Case, 0, 0)	
+
 	ms := Storage{
 		Name: "MemoryStore",
 		New: func() server.Store {
 			return NewMemoryStore()
+		},
+	}
+	
+	dbcount := 0
+	ss := Storage {
+		Name: "SQLiteStore",
+		New: func () server.Store {
+			dbcount += 1
+			db, err := NewSQLiteStore(fmt.Sprintf("db-%v", dbcount))
+			if (err != nil) {
+				t.Fatalf("Error opening database: %v", err)
+			}
+			return db
 		},
 	}
 	
@@ -47,6 +61,7 @@ func TestRoundTrip(t *testing.T) {
 	}
 
 	stores = append(stores, ms)
+	stores = append(stores, ss)
 	tests = append(tests, rt)	
 	tests = append(tests, del)
 	tests = append(tests, col)
