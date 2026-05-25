@@ -9,6 +9,7 @@ import (
 	"strings"
 	"encoding/json"
 	regex "regexp"
+	"io"
 )
 
 func TestRoundTrip(t *testing.T) {
@@ -20,7 +21,7 @@ func TestRoundTrip(t *testing.T) {
 	srv := httptest.NewServer(s.Routes())
 	t.Cleanup(srv.Close)
 
-	resp, err := http.Post(srv.URL + "/snippet", "plain/text", strings.NewReader("Content"))
+	resp, err := http.Post(srv.URL + "/snippet", "text/plain", strings.NewReader("Content"))
 	
 	if err != nil {
 		t.Errorf("Issue with POST /snippet: %v", err)
@@ -48,4 +49,30 @@ func TestRoundTrip(t *testing.T) {
 	if (!rex.MatchString(slug)) {
 		t.Errorf("Slug '%v' does not match re '%v'", slug, re)
 	}
+
+	resp, err = http.Get(srv.URL + "/snippet/" + slug)
+	
+	if (err != nil) {
+		t.Errorf("GET %v/snippet/%v failed: %v", srv.URL, slug, err)
+	}
+
+	if (resp.StatusCode != http.StatusOK) {
+		t.Errorf("GET %v/snippet/%v returned status: %v", srv.URL, slug, err)
+	}
+
+	if (resp.Header.Get("Content-Type") != "text/plain") {
+		t.Errorf("Expected Content-Type text/plain, got %v", resp.Header.Get("Content-Type"))
+	}
+
+	body, err := io.ReadAll(resp.Body) 
+
+	if (err != nil) {
+		t.Errorf("Could not read body: %v", err)
+	}
+
+	if (string(body) != "Content") {
+		t.Errorf("Expected 'Content' got '%v'", string(body))
+	}
+
+
 }
