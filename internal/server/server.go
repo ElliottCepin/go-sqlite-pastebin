@@ -8,6 +8,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"io"
+	"fmt"
 )
 
 type Store interface {
@@ -31,7 +32,7 @@ func (s *Server) handleCreate(w http.ResponseWriter, r *http.Request){
 		return
 	}
 
-	if (r.Header.Get("Content-Type") != "plain/text") {
+	if (r.Header.Get("Content-Type") != "text/plain; charset=utf-8") {
 		w.WriteHeader(http.StatusUnsupportedMediaType)
 		return
 	}
@@ -64,8 +65,35 @@ func generateSlug() string {
 	return token[:8]	
 }
 
-func (s *Server) handleRetrieve() {
+func (s *Server) handleRetrieve(w http.ResponseWriter, r *http.Request) {
+	if (r.Method != "GET") {
+		w.WriteHeader(http.StatusMethodNotAllowed)	
+	}
 
+	
+	if (r.Header.Get("Content-Type") != "text/plain") {
+		w.WriteHeader(http.StatusUnsupportedMediaType)
+		return
+	}
+
+	body, err := io.ReadAll(r.Body)
+
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+	}
+
+	slug := string(body)
+	content, err := s.store.Get(context.Background(), slug)
+
+	if (err != nil) {
+		w.WriteHeader(http.StatusNotFound)
+	}
+
+	w.Header().Add("Content-Type", "text/plain")
+	fmt.Fprintf(w, "%v", content)
+	w.WriteHeader(http.StatusOK)
+
+	
 }
 
 func (s *Server) handleDelete() {

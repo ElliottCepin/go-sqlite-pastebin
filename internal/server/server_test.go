@@ -61,7 +61,7 @@ func TestRoundTrip(t *testing.T) {
 	}
 
 	if (resp.Header.Get("Content-Type") != "text/plain") {
-		t.Errorf("Expected Content-Type text/plain, got %v", resp.Header.Get("Content-Type"))
+		t.Errorf("Expected Content-Type text/plain, got '%v'", resp.Header.Get("Content-Type"))
 	}
 
 	body, err := io.ReadAll(resp.Body) 
