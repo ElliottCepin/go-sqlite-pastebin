@@ -45,6 +45,7 @@ func (s *Server) handleCreate(w http.ResponseWriter, r *http.Request){
 
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
+		return
 	}
 
 	err = encoder.Encode(
@@ -54,12 +55,12 @@ func (s *Server) handleCreate(w http.ResponseWriter, r *http.Request){
 
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
+		return
 	}
 
 
 	
 	s.store.Save(context.Background(), slug, string(body))
-	w.WriteHeader(http.StatusOK)
 }
 
 func generateSlug() string {
@@ -72,6 +73,7 @@ func generateSlug() string {
 func (s *Server) handleRetrieve(w http.ResponseWriter, r *http.Request) {
 	if (r.Method != "GET") {
 		w.WriteHeader(http.StatusMethodNotAllowed)	
+		return
 	}
 
 	slug := r.PathValue("slug")
@@ -79,21 +81,35 @@ func (s *Server) handleRetrieve(w http.ResponseWriter, r *http.Request) {
 
 	if (err != nil) {
 		w.WriteHeader(http.StatusNotFound)
+		return
 	}
 
 	w.Header().Add("Content-Type", "text/plain")
 	fmt.Fprintf(w, "%v", content)
-	w.WriteHeader(http.StatusOK)
 	
 }
 
-func (s *Server) handleDelete() {
+func (s *Server) handleDelete(w http.ResponseWriter, r *http.Request) {
+	if (r.Method != "DELETE") {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
 
+	slug := r.PathValue("slug")
+	err := s.store.Delete(context.Background(), slug)
+
+	if (err != nil) {
+		w.WriteHeader(http.StatusNotFound)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
 }
 
 func (s *Server) Routes() *http.ServeMux {
 	mux := http.NewServeMux()
 	mux.HandleFunc("POST /snippet", s.handleCreate)
 	mux.HandleFunc("GET /snippet/{slug}", s.handleRetrieve)
+	mux.HandleFunc("DELETE /snippet/{slug}", s.handleDelete)
 	return mux
 }
