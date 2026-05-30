@@ -24,7 +24,7 @@ func TestRoundTrip(t *testing.T) {
 	resp, err := http.Post(srv.URL + "/snippet", "text/plain", strings.NewReader("Content"))
 	
 	if err != nil {
-		t.Errorf("Issue with POST /snippet: %v", err)
+		t.Errorf("Issue with POST /snippet: %v | status code: %v", err, resp.StatusCode)
 	}
 
 	dec := json.NewDecoder(resp.Body)
@@ -34,7 +34,7 @@ func TestRoundTrip(t *testing.T) {
 	err = dec.Decode(&data)
 
 	if err != nil {
-		t.Errorf("Could not decode response: %v", err)
+		t.Errorf("Could not decode response: %v | status code: %v", err, resp.StatusCode)
 	}
 
 	slug := data.Slug
@@ -57,7 +57,7 @@ func TestRoundTrip(t *testing.T) {
 	}
 
 	if (resp.StatusCode != http.StatusOK) {
-		t.Errorf("GET %v/snippet/%v returned status: %v", srv.URL, slug, err)
+		t.Errorf("GET %v/snippet/%v returned status: %v", srv.URL, slug, resp.StatusCode)
 	}
 
 	if (resp.Header.Get("Content-Type") != "text/plain") {

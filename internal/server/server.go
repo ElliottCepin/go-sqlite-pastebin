@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 	"io"
 	"fmt"
+	"mime"
 )
 
 type Store interface {
@@ -31,8 +32,9 @@ func (s *Server) handleCreate(w http.ResponseWriter, r *http.Request){
 		w.WriteHeader(http.StatusMethodNotAllowed)
 		return
 	}
-
-	if (r.Header.Get("Content-Type") != "text/plain; charset=utf-8") {
+	
+	mt, _, err := mime.ParseMediaType(r.Header.Get("Content-Type"))
+	if (err != nil || mt != "text/plain") {
 		w.WriteHeader(http.StatusUnsupportedMediaType)
 		return
 	}
@@ -53,6 +55,8 @@ func (s *Server) handleCreate(w http.ResponseWriter, r *http.Request){
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 	}
+
+
 	
 	s.store.Save(context.Background(), slug, string(body))
 	w.WriteHeader(http.StatusOK)
@@ -70,19 +74,7 @@ func (s *Server) handleRetrieve(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusMethodNotAllowed)	
 	}
 
-	
-	if (r.Header.Get("Content-Type") != "text/plain") {
-		w.WriteHeader(http.StatusUnsupportedMediaType)
-		return
-	}
-
-	body, err := io.ReadAll(r.Body)
-
-	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-	}
-
-	slug := string(body)
+	slug := r.PathValue("slug")
 	content, err := s.store.Get(context.Background(), slug)
 
 	if (err != nil) {
@@ -92,7 +84,6 @@ func (s *Server) handleRetrieve(w http.ResponseWriter, r *http.Request) {
 	w.Header().Add("Content-Type", "text/plain")
 	fmt.Fprintf(w, "%v", content)
 	w.WriteHeader(http.StatusOK)
-
 	
 }
 
@@ -103,5 +94,6 @@ func (s *Server) handleDelete() {
 func (s *Server) Routes() *http.ServeMux {
 	mux := http.NewServeMux()
 	mux.HandleFunc("POST /snippet", s.handleCreate)
+	mux.HandleFunc("GET /snippet/{slug}", s.handleRetrieve)
 	return mux
 }
