@@ -135,7 +135,7 @@ func TestSlugGeneration(t *testing.T) {
 		t.Errorf("Issues with regex (%v): %v", re, err)
 	}
 
-	for i := 0; i>0; i++ {
+	for i := 0; i<10000; i++ {
 		slug := generateSlug()
 		_, ok := slugs[slug]
 		if (ok) {
