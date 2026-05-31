@@ -2,14 +2,12 @@ package store
 
 import (
 	"context"
-	"sync"
 	"errors"
 	"database/sql"
 	_ "modernc.org/sqlite"
 )
 
 type SQLiteStore struct {
-	mu sync.Mutex	
 	db *sql.DB
 	del *sql.Stmt
 	get *sql.Stmt
@@ -45,8 +43,6 @@ func NewSQLiteStore(filename string) (*SQLiteStore, error) {
 }
 
 func (s *SQLiteStore)  Save(ctx context.Context, slug string, content string) error {
-	s.mu.Lock()
-	defer s.mu.Unlock()
 
 	result, err := s.set.ExecContext(ctx, slug, content)
 	
@@ -68,8 +64,6 @@ func (s *SQLiteStore)  Save(ctx context.Context, slug string, content string) er
 }
 
 func (s *SQLiteStore) Get(ctx context.Context, slug string) (string, error) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
 	row := s.get.QueryRowContext(ctx, slug)
 	var slg, con string
 	err := row.Scan(&slg, &con)
@@ -85,13 +79,17 @@ func (s *SQLiteStore) Get(ctx context.Context, slug string) (string, error) {
 }
 
 func (s *SQLiteStore) Delete(ctx context.Context, slug string) error {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	
 	_, err := s.del.ExecContext(ctx, slug)
 	if (err != nil) {
 		return err
 	}
 
 	return nil 
+}
+
+func (s *SQLiteStore) Close() {
+	s.del.Close()
+	s.get.Close()
+	s.set.Close()
+	s.db.Close()
 }

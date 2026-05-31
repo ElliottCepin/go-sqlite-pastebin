@@ -62,16 +62,33 @@ func TestSubtests(t *testing.T) {
 		Inst: subtestConcurrentOps,
 	}
 
+	dm := Case {
+		Name: "DeleteMissing",
+		Inst: subtestDeleteMissing,
+	}
+	
+	gm := Case {
+		Name: "GetMissing",
+		Inst: subtestGetMissing,
+	}
+
 	stores = append(stores, ms)
 	stores = append(stores, ss)
 	tests = append(tests, rt)	
 	tests = append(tests, del)
 	tests = append(tests, col)
 	tests = append(tests, co)
+	tests = append(tests, dm)
+	tests = append(tests, gm)
 
 	for _, impl := range stores {
 		for _, test := range tests {
-			t.Run("Test" + test.Name + ":" + impl.Name, func (t *testing.T) { test.Inst(t, impl.New()) } )
+			t.Run("Test" + test.Name + ":" + impl.Name, func (t *testing.T) { 
+				db := impl.New()	
+				defer db.Close()
+				test.Inst(t, db) 
+
+			} )
 		}
 	}
 }
@@ -111,6 +128,23 @@ func subtestDelete(t *testing.T, s server.Store) {
 	
 }
 
+func subtestDeleteMissing(t *testing.T, s server.Store) {
+	in := "abcd"
+
+	if err := s.Delete(t.Context(), in); err != nil {
+		t.Errorf("Error during delete: %v", err)
+	}
+}
+
+func subtestGetMissing(t *testing.T, s server.Store) {
+	in := "abcd"
+	content, err := s.Get(t.Context(), in)
+	
+	if (err == nil) {
+		t.Errorf("Expected an error, got <nil> and content='%v'", content)
+	}
+}
+
 func subtestCollision (t *testing.T, s server.Store) {
 	in := "abcd" 
 	out1 := "efgh"
@@ -144,3 +178,5 @@ func subtestConcurrentOps(t *testing.T, s server.Store) {
 	}
 	wg.Wait()
 }
+
+

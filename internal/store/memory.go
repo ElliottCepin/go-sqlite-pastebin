@@ -53,3 +53,6 @@ func (m *MemoryStore) Delete(ctx context.Context, slug string) error {
 
 	return nil 
 }
+
+func (m *MemoryStore) Close() {
+}

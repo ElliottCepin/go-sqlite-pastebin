@@ -16,6 +16,7 @@ type Store interface {
 	Save(ctx context.Context, slug string, content string) error
 	Get(ctx context.Context, slug string) (string, error)
 	Delete(ctx context.Context, slug string) error
+	Close()
 }
 
 type Server struct {
@@ -25,6 +26,15 @@ type Server struct {
 
 type Data struct {
 	Slug string
+}
+
+func NewServer(st Store, log *slog.Logger) Server {
+	s := Server{
+		store: st,
+		logger: log,
+	}
+
+	return s
 }
 
 func (s *Server) handleCreate(w http.ResponseWriter, r *http.Request){
@@ -38,12 +48,37 @@ func (s *Server) handleCreate(w http.ResponseWriter, r *http.Request){
 		w.WriteHeader(http.StatusUnsupportedMediaType)
 		return
 	}
+	
+	var slug string
+	valid := false
+	for i := 0; i < 3; i++ {
+		slug = generateSlug()
+		_, err := s.store.Get(r.Context(), slug)
+		if (err != nil) {
+			valid = true	
+			break
+		}
+	}
 
-	slug := generateSlug()
+	if (!valid) {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
 	encoder := json.NewEncoder(w)
 	body, err := io.ReadAll(r.Body)
 
 	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	if len(body) > 64000 {
+		w.WriteHeader(http.StatusRequestEntityTooLarge)
+		return
+	}
+
+	if (len(body) == 0) {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
@@ -61,6 +96,7 @@ func (s *Server) handleCreate(w http.ResponseWriter, r *http.Request){
 
 	
 	s.store.Save(context.Background(), slug, string(body))
+	w.WriteHeader(http.StatusCreated)
 }
 
 func generateSlug() string {

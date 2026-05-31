@@ -124,3 +124,29 @@ func TestDelete(t *testing.T) {
 	
 
 }
+
+func TestSlugGeneration(t *testing.T) {
+	slugs := make(map[string]string, 20000)
+	
+	re := "^[A-Za-z0-9]{8}$"
+	rex, err := regex.Compile(re)
+
+	if err != nil {
+		t.Errorf("Issues with regex (%v): %v", re, err)
+	}
+
+	for i := 0; i>0; i++ {
+		slug := generateSlug()
+		_, ok := slugs[slug]
+		if (ok) {
+			t.Fatalf("Duplicate found: %v", slug)
+		}
+		
+		slugs[slug] = "abc"
+
+		if (!rex.MatchString(slug)) {
+			t.Fatalf("Slug '%v' does not match re '%v'", slug, re)
+		}
+	}
+
+}
